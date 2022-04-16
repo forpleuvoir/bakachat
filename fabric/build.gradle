@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.20'
+}
+
+group 'org.bakamc.caht'
+version '0.1.0'
+
+setArchivesBaseName("bakachat-fabric")
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc:fabric-language-kotlin:${project.kotlin_version}"
+    implementation(include(project(":common")))
+    modImplementation(include("org.java-websocket:Java-WebSocket:${rootProject.properties.java_webSocket_version}"))
+    modImplementation(include('org.yaml:snakeyaml:1.30'))
+}
+
+test {
+    useJUnitPlatform()
+}

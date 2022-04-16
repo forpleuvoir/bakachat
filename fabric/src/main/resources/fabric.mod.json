@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "bakachat",
+  "version": "${version}",
+  "name": "BakaChat",
+  "description": "chat",
+  "authors": [
+	"forpleuvoir"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/bakachat/icon.png",
+  "environment": "*",
+  "entrypoints": {
+	"client": [
+	],
+	"main": [
+	  {
+		"adapter": "kotlin",
+		"value": "org.bakamc.chat.fabric.BakaChat"
+	  }
+	]
+  },
+  "mixins": [
+	"bakachat.mixins.json"
+  ],
+  "depends": {
+	"fabricloader": ">=0.13.3",
+	"fabric": "*",
+	"minecraft": "1.18.1",
+	"fabric-language-kotlin": ">=1.7.2+kotlin.1.6.20"
+  }
+}

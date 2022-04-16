@@ -1,0 +1,23 @@
+riguruAddress: "ws://127.0.0.1:3499"
+messageExp: ":%message%"
+senderNameExp: "[%sender_name%]"
+server: "§e[测试服]"
+senderNameHoverEvent:
+  action: "SHOW_ENTITY"
+  content:
+    type: "minecraft:player"
+    id: "%sender_uuid%"
+    name: "%sender_name%"
+senderNameClickEvent:
+  action: "SUGGEST_COMMAND"
+  value: "/bakachat:message %sender_name%"
+serverNameHoverEvent:
+  action: "SHOW_TEXT"
+  content:
+    texts:
+      - "%server_name%"
+      - "点击传送至该服务器"
+serverNameClickEvent:
+  action: "SUGGEST_COMMAND"
+  value: "/server server_id"
+

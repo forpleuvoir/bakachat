@@ -1,0 +1,27 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.6.20'
+    id 'java'
+}
+
+group 'org.bakamc.chat'
+version rootProject.version
+
+repositories {
+    mavenCentral()
+    mavenCentral()
+
+}
+
+dependencies {
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib"
+    compileOnly "com.google.code.gson:gson:2.8.8"
+    compileOnly "com.google.guava:guava:31.0.1-jre"
+    compileOnly "org.java-websocket:Java-WebSocket:${rootProject.properties.java_webSocket_version}"
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib"
+    testImplementation "com.google.code.gson:gson:2.8.8"
+    testImplementation "com.google.guava:guava:31.0.1-jre"
+    testImplementation "org.java-websocket:Java-WebSocket:${rootProject.properties.java_webSocket_version}"
+}
+
+
+

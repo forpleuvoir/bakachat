@@ -1,0 +1,32 @@
+name: BakaChat
+version: 0.1.0
+main: org.bakamc.chat.spigot.BakaChatPlugin
+api-version: 1.18
+authors:
+  - forpleuivoir
+
+commands:
+  message:
+    description: whisper with a player
+    aliases:
+      - msg
+    usage: /bakachat:message <player_name> <message> or /bakachat:msg <player_name> <message>
+    permission: BakaChat.message
+  reconnect:
+    description: reconnect to websocket server
+    usage: /bakachat:reconnect
+    permission: BakaChat.admin
+    permission-message: §cYou don't have <permission> permission
+  reloadConfig:
+    description: reload plugin config
+    usage: /bakachat:reloadConfig
+    permission: BakaChat.admin
+    permission-message: §cYou don't have <permission> permission
+
+permissions:
+  BakaChat.message:
+    description: message
+    default: true
+  BakaChat.admin:
+    description: administrator
+    default: op

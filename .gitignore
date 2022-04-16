@@ -1,0 +1,11 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+/java_pid19872.hprof
+/test
+/fabric/src/test/
+/common/src/test/
+/mirai/src/test/
+/spigot/src/test/

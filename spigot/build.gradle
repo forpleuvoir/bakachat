@@ -1,0 +1,32 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.6.20'
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group 'org.bakamc.chat'
+version '0.1.0'
+
+repositories {
+    mavenCentral()
+    mavenCentral()
+    maven {
+        name "spigot-repo"
+        url "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation "org.java-websocket:Java-WebSocket:${rootProject.properties.java_webSocket_version}"
+    implementation project(":common")
+    compileOnly("org.spigotmc:spigot-api:1.18.1-R0.1-SNAPSHOT")
+    compileOnly(fileTree(dir: '/lib', include: ['*.jar']))
+}
+shadowJar {
+    archiveBaseName.set("bakachat-spigot")
+}
+
+test {
+    useJUnitPlatform()
+}
