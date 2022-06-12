@@ -6,6 +6,7 @@
   "mixins": [
 	"MixinItemStackContent",
 	"MixinMinecraftServer",
+	"MixinServerPlayerEntity",
 	"MixinServerPlayNetworkHandler"
   ],
   "client": [

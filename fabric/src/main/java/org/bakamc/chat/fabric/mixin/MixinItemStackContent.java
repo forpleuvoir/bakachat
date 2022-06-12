@@ -10,14 +10,15 @@ import org.spongepowered.asm.mixin.gen.Invoker;
  * <p>
  * 包名 org.bakamc.chat.fabric.mixin
  * <p>
- * 文件名 MixinHoverEvent
+ * 文件名 MixinItemStackContent
  * <p>
- * 创建时间 2022/4/16 22:18
+ * 创建时间 2022/6/12 12:43
  *
  * @author forpleuvoir
  */
+
 @Mixin(HoverEvent.ItemStackContent.class)
-public interface MixinItemStackContent {
+public abstract class MixinItemStackContent {
 
 	@Invoker("parse")
 	static HoverEvent.ItemStackContent parseItemStackContent(JsonElement jsonElement) {

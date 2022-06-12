@@ -2,8 +2,6 @@ package org.bakamc.chat.fabric.mixin;
 
 import net.minecraft.server.MinecraftServer;
 import org.bakamc.chat.fabric.BakaChat;
-import org.bakamc.chat.fabric.MessageHandler;
-import org.lwjgl.system.CallbackI;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,17 +16,15 @@ import java.util.function.Function;
  * <p>
  * 文件名 MixinMinecraftServer
  * <p>
- * 创建时间 2022/4/16 20:27
+ * 创建时间 2022/6/12 12:44
  *
  * @author forpleuvoir
  */
+
 @Mixin(MinecraftServer.class)
 public abstract class MixinMinecraftServer {
-
 	@Inject(method = "startServer", at = @At("RETURN"))
-	private static void startServer(Function<Thread, CallbackI.S> function, CallbackInfoReturnable<CallbackI.S> cir) {
-		BakaChat.server = (MinecraftServer) cir.getReturnValue();
-		BakaChat.resetMessageHandler(new MessageHandler((MinecraftServer) cir.getReturnValue()));
+	private static void startServer(Function<Thread, MinecraftServer> function, CallbackInfoReturnable<MinecraftServer> cir) {
+		BakaChat.server = cir.getReturnValue();
 	}
-
 }

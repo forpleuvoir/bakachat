@@ -1,16 +1,15 @@
-package org.bakamc.chat.common.util
-
+package bakamc.chat.common.util
 
 /**
  *
 
  * 项目名 bakachat
 
- * 包名 org.bakamc.chat.common.util
+ * 包名 bakamc.chat.common.util
 
  * 文件名 MessageUtil
 
- * 创建时间 2022/4/13 22:00
+ * 创建时间 2022/6/5 13:58
 
  * @author forpleuvoir
 
@@ -44,10 +43,20 @@ object MessageUtil {
 		"${PLACEHOLDER}r" to "§r",
 	)
 
+	/**
+	 * 处理消息格式
+	 * @param message [String] 原始消息 &6message
+	 * @return [String] 处理后的消息 §6message
+	 */
 	fun handleFormat(message: String): String {
 		return message.replace(map)
 	}
 
+	/**
+	 * 反向处理消息格式
+	 * @param message [String] 原始消息 §6message
+	 * @return [String] 处理后的消息 &6message
+	 */
 	fun reHandleFormat(message: String): String {
 		var temp: String = message
 		map.forEach { (k, v) ->
@@ -56,9 +65,15 @@ object MessageUtil {
 		return temp
 	}
 
+	/**
+	 * 清除格式符号
+	 * @param message String
+	 * @return String
+	 */
 	fun cleanFormatting(message: String): String {
 		var temp: String = message
 		map.forEach { (k, v) ->
+			temp = temp.replace(k, "")
 			temp = temp.replace(v, "")
 		}
 		return temp

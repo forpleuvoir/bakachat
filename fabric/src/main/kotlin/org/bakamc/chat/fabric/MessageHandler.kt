@@ -1,30 +1,21 @@
 package org.bakamc.chat.fabric
 
-import net.minecraft.entity.player.PlayerEntity
+import bakamc.chat.common.*
 import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
+import net.minecraft.network.encryption.NetworkEncryptionUtils.SignatureData
+import net.minecraft.network.message.MessageSender
+import net.minecraft.network.message.MessageType
+import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundCategory
-import net.minecraft.sound.SoundCategory.BLOCKS
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.ClickEvent
+import net.minecraft.text.*
+import net.minecraft.text.ClickEvent.Action.SUGGEST_COMMAND
 import net.minecraft.text.HoverEvent.Action
-import net.minecraft.text.HoverEvent.EntityContent
-import net.minecraft.text.LiteralText
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
-import net.minecraft.util.Formatting
-import net.minecraft.util.Identifier
-import net.minecraft.util.registry.Registry
-import org.bakamc.chat.common.message.AbstractMessageHandler
-import org.bakamc.chat.common.message.Message
-import org.bakamc.chat.common.message.MessageType.CHAT
-import org.bakamc.chat.common.message.MessageType.WHISPER
-import org.bakamc.chat.common.message.textevent.HoverEvent
-import org.bakamc.chat.common.message.textevent.HoverEvent.ItemContent
-import org.bakamc.chat.common.util.JsonUtil.gson
-import org.bakamc.chat.fabric.mixin.MixinItemStackContent
+import net.minecraft.text.HoverEvent.ItemStackContent
+import net.minecraft.util.Formatting.ITALIC
+import org.bakamc.chat.fabric.mixin.MixinServerPlayerEntity
+import java.time.Instant
+import java.util.*
 import java.util.regex.Pattern
 
 /**
@@ -36,252 +27,134 @@ import java.util.regex.Pattern
 
  * 文件名 MessageHandler
 
- * 创建时间 2022/4/16 20:34
+ * 创建时间 2022/6/12 13:00
 
  * @author forpleuvoir
 
  */
-class MessageHandler(private val server: MinecraftServer) : AbstractMessageHandler<PlayerEntity>(MessageConfig()) {
+class MessageHandler(config: IMessageConfig, private val server: MinecraftServer) : AbstractMessageHandler<Text, ServerPlayerEntity>(config) {
 
-	override fun reload() {
-		this.messageConfig = MessageConfig()
+	override fun ServerPlayerEntity.getItemJson(index: Int): String {
+		val stack = if (index == -1) this.mainHandStack else if (index == -2) this.offHandStack else inventory.getStack(index)
+		return Text.Serializer.toJson(stack.toHoverAbleText())
 	}
 
-	override fun sendMessage(player: PlayerEntity, message: String, target: String?, targetId: String?) {
-		val senderName: String
-		val senderUUID: String
-		val senderServer: String = messageConfig.sender_server
-		player.let {
-			senderName = it.entityName
-			senderUUID = it.uuidAsString
+	private fun ItemStack.toHoverAbleText(): Text {
+		val mutableText: MutableText = Text.empty().append(this.name).append(if (this.count > 1) " x${this.count}" else "")
+		if (this.hasCustomName()) {
+			mutableText.formatted(ITALIC)
 		}
-		val messageEvents = ArrayList<HoverEvent>()
-		val regex = "(%\\d)|(%i)"
-		val pattern = Pattern.compile(regex)
-		val matcher = pattern.matcher(message)
-		val matches: ArrayList<String> = ArrayList()
-		val msg: String = message.run {
-			val strBuilder = StringBuilder()
-			while (matcher.find()) {
-				matches.add(matcher.group())
+		val mutableText2 = MutableText.of(LiteralTextContent("§b[§r")).append(mutableText).append("§b]§r")
+		if (!this.isEmpty) {
+			mutableText2.formatted(this.rarity.formatting).styled { style: Style ->
+				style.withHoverEvent(HoverEvent(Action.SHOW_ITEM, ItemStackContent(this)))
 			}
-			if (matches.size > 0) {
-				val s: List<String> = this.split(regex.toRegex())
-				s.forEachIndexed { i, str ->
-					strBuilder.append(str)
-					if (i != (s.size - 1)) {
-						val num = matches[i][1].toString()
-						val stack: ItemStack? = if (num == "i") player.inventory.mainHandStack else {
-							val index = num.toInt() - 1
-							player.inventory.getStack(index)
-						}
-						if (stack != null && stack.item != Items.AIR) {
-							val item = stack.item
-							val translationKey = item.translationKey
-							val nbtTagCompound = stack.nbt?.asString() ?: ""
-							val key = Registry.ITEM.getId(item)
-							val rarity = stack.rarity.formatting.code
-							strBuilder.append("§{$translationKey}")
-							messageEvents.add(
-								HoverEvent(
-									ItemContent(
-										key.toString(),
-										stack.count,
-										nbtTagCompound,
-										rarity
-									)
-								)
-							)
-						} else {
-							strBuilder.append(matches[i])
-						}
-					}
+		}
+		return mutableText2
+	}
+
+	override fun reload() {
+		TODO("Not yet implemented")
+	}
+
+	override fun Message.toText(): Text {
+		val regex = "§\\(.+?§\\)"
+		val texts = ArrayList<Text>()
+		Pattern.compile(regex).matcher(message).run {
+			while (this.find()) {
+				texts.add(Text.Serializer.fromJson(this.group())!!)
+			}
+		}
+		val message: MutableText = Text.empty()
+		this.message.split(regex.toRegex()).run {
+			forEachIndexed { index, str ->
+				message.append(str).let {
+					if (index != this.size - 1) it.append(texts[index])
 				}
-			} else {
-				strBuilder.append(this)
 			}
-			strBuilder.toString()
 		}
-		sendMessage(
-			Message(
-				type = if (target != null || targetId != null) WHISPER else CHAT,
-				receiver_name = target ?: "",
-				receiver_uuid = targetId ?: "",
-				sender_name = senderName,
-				sender_hover_event = messageConfig.sender_name_hover_evnet(senderName, senderUUID),
-				sender_click_event = messageConfig.sender_name_click_evnet(senderName, senderUUID),
-				sender_uuid = senderUUID,
-				server_name = senderServer,
-				server_hover_event = messageConfig.server_name_hover_event(senderServer),
-				server_click_event = messageConfig.server_name_click_event(senderServer),
-				message = msg,
-				messageHoverEvents = messageEvents
-			)
+		return message
+	}
+
+	override fun ServerInfo.toText(): Text {
+		val hoverText = MutableText.of(LiteralTextContent("$serverName\n"))
+			.append("\n")
+			.append("服务器ID:$serverId\n")
+			.append("$description\n")
+			.append("\n")
+			.append("点击加入此服务器")
+		return MutableText.of(LiteralTextContent("$serverName\n")).styled {
+			it.withHoverEvent(HoverEvent(Action.SHOW_TEXT, hoverText))
+			it.withClickEvent(ClickEvent(SUGGEST_COMMAND, "/server $serverId"))
+		}
+	}
+
+	override fun PlayerInfo.toText(): Text {
+		val hoverText = MutableText.of(LiteralTextContent("§b$name\n"))
+			.append("\n")
+			.append("玩家名:$displayName\n")
+			.append("uuid:$uuid\n")
+			.append("等级:$level\n")
+			.append("总经验值:$experience\n")
+			.append("生命值:$health/$maxHealth\n")
+			.append("所在世界:$dimension")
+			.append("\n")
+			.append("点击与该玩家私聊")
+		return MutableText.of(LiteralTextContent("$name\n")).styled {
+			it.withHoverEvent(HoverEvent(Action.SHOW_TEXT, hoverText))
+			it.withClickEvent(ClickEvent(SUGGEST_COMMAND, "/bakachat:msg $name"))
+		}
+	}
+
+	override fun ServerPlayerEntity.playerInfo(): PlayerInfo {
+		return PlayerInfo(
+			this.entityName,
+			this.displayName.string,
+			this.uuid,
+			this.experienceLevel,
+			this.totalExperience,
+			this.maxHealth,
+			this.health,
+			this.world.registryKey.value.toString()
 		)
 	}
 
-	override fun broadcast(message: Message) {
-		this.server.sendSystemMessage(LiteralText(message.sender_name).append(Text.of(message.message)), message.senderUUID)
-		server.playerManager.playerList.forEach {
-			it.sendMessage(message)
-		}
+	override fun Message.toFinalText(): Text {
+		TODO("Not yet implemented")
 	}
 
 	override fun whisper(message: Message) {
-		val players = server.playerManager.playerList
-		players
-			.filter { it.entityName.toString() == message.receiver_name || it.uuid == message.receiverUUID }
-			.forEach { it.sendMessage(message) }
-		players
-			.filter { it.entityName.toString() == message.sender_name || it.uuid == message.senderUUID }
-			.forEach { it.sendMessage(message) }
+		this.server.playerManager.playerList
+			.filter {
+				it.entityName == message.receiver || it.displayName.string == message.receiver
+				it.entityName == message.sender.name || it.displayName.string == message.sender.displayName
+			}
+			.forEach {
+				it.sendMessage(message)
+			}
+	}
+
+	override fun broadcast(message: Message) {
+		this.server.run {
+			sendMessage(message.toFinalText())
+			playerManager.playerList.forEach {
+				it.sendMessage(message)
+			}
+		}
+
 	}
 
 	private fun ServerPlayerEntity.sendMessage(message: Message) {
-		val world = this.entityWorld
-		val serverName = LiteralText(message.server_name).apply {
-			var hoverEvent: net.minecraft.text.HoverEvent? = null
-			var clickEvent: ClickEvent? = null
-			message.server_hover_event?.let { event ->
-				hoverEvent = when (event.action) {
-					HoverEvent.Action.SHOW_ENTITY -> {
-						val entity = event.content as HoverEvent.EntityContent
-						net.minecraft.text.HoverEvent(
-							Action.SHOW_ENTITY,
-							EntityContent.parse(gson.toJsonTree(entity))
-						)
-					}
-					HoverEvent.Action.SHOW_ITEM   -> {
-						val item = event.content as ItemContent
-						net.minecraft.text.HoverEvent(
-							Action.SHOW_ITEM,
-							MixinItemStackContent.parseItemStackContent(gson.toJsonTree(item))
-						)
-					}
-					HoverEvent.Action.SHOW_TEXT   -> {
-						val text = event.content as HoverEvent.TextContent
-						val texts = LiteralText("").apply { text.texts.forEach(this::append) }
-						net.minecraft.text.HoverEvent(Action.SHOW_TEXT, texts)
-					}
-				}
-			}
-			message.server_click_event?.let { event ->
-				clickEvent = ClickEvent(ClickEvent.Action.valueOf(event.action.toString()), event.value)
-			}
-			styled { it.withClickEvent(clickEvent).withHoverEvent(hoverEvent) }
-		}
-		val playerName = LiteralText(message.sender_name).apply {
-			var hoverEvent: net.minecraft.text.HoverEvent? = null
-			var clickEvent: ClickEvent? = null
-			message.sender_hover_event?.let { event ->
-				hoverEvent = when (event.action) {
-					HoverEvent.Action.SHOW_ENTITY -> {
-						val entity = event.content as HoverEvent.EntityContent
-						net.minecraft.text.HoverEvent(
-							Action.SHOW_ENTITY,
-							EntityContent.parse(gson.toJsonTree(entity))
-						)
-					}
-					HoverEvent.Action.SHOW_ITEM   -> {
-						val item = event.content as ItemContent
-						net.minecraft.text.HoverEvent(
-							Action.SHOW_ITEM,
-							MixinItemStackContent.parseItemStackContent(gson.toJsonTree(item))
-						)
-					}
-					HoverEvent.Action.SHOW_TEXT   -> {
-						val text = event.content as HoverEvent.TextContent
-						val texts = LiteralText("").apply { text.texts.forEach(this::append) }
-						net.minecraft.text.HoverEvent(Action.SHOW_TEXT, texts)
-					}
-				}
-			}
-			message.sender_click_event?.let { event ->
-				clickEvent = ClickEvent(ClickEvent.Action.valueOf(event.action.toString()), event.value)
-			}
-			styled { it.withClickEvent(clickEvent).withHoverEvent(hoverEvent) }
-		}
-		val atList = ArrayList<String>()
-		val messageStr = handlerAt(message.message, atList)
-		val msg = LiteralText("").apply {
-			if (message.type == CHAT && atList.contains(this@sendMessage.entityName))
-				world.playSound(this@sendMessage,
-				                this@sendMessage.blockPos,
-				                SoundEvents.ENTITY_CREEPER_PRIMED,
-				                SoundCategory.HOSTILE,
-				                10f,
-				                1.0f
-				)
-			val regex = "(?<=§\\{)[^}]+"
-			val matches: ArrayList<String> = ArrayList()
-			val pattern = Pattern.compile(regex)
-			val matcher = pattern.matcher(messageStr)
-			while (matcher.find()) {
-				matches.add(matcher.group())
-			}
-			messageStr.split(Regex(regex)).forEachIndexed { index, str ->
-				this.append(LiteralText(str.removePrefix("}")))
-				if (index != messageStr.split(Regex(regex)).size - 1) {
-					val hoverEvent = message.messageHoverEvents[index]
-					if (hoverEvent.action == HoverEvent.Action.SHOW_ITEM) {
-						val item = hoverEvent.content as ItemContent
-						val text = LiteralText("[").apply {
-							append(TranslatableText(matches[index]))
-							val countStr = if (item.count < 2) "" else " x${item.count}"
-							append(LiteralText("$countStr]§r"))
-							styled {
-								it.withHoverEvent(
-									net.minecraft.text.HoverEvent(
-										Action.SHOW_ITEM,
-										MixinItemStackContent.parseItemStackContent(gson.toJsonTree(item)))
-								).withColor(Formatting.byCode(item.rarity))
-							}
-						}
-						this.append(text)
-					}
-				}
-			}
-		}
-		when (message.type) {
-			CHAT    -> this.sendMessage(LiteralText("").append(serverName).append(playerName).append(msg),
-			                            net.minecraft.network.MessageType.CHAT,
-			                            message.senderUUID)
-			WHISPER -> {
-				val receiverName = LiteralText(messageConfig.sender_name_exp(message.receiver_name)).styled {
-					it.withHoverEvent(
-						net.minecraft.text.HoverEvent(
-							Action.SHOW_ENTITY,
-							EntityContent(Registry.ENTITY_TYPE.get(Identifier("minecraft:player")),
-							              message.receiverUUID,
-							              Text.of(message.receiver_name)
-							)
-						)
-					)
-				}
-				if (message.sender_name == messageConfig.sender_name_exp(this.entityName)) {
-					this.sendMessage(
-						LiteralText("")
-							.append(serverName)
-							.append(LiteralText("你悄悄对"))
-							.append(receiverName).styled { it.withColor(Formatting.GRAY) }
-							.append("说")
-							.append(msg),
-						net.minecraft.network.MessageType.CHAT,
-						message.senderUUID,
-					)
-				} else {
-					world.playSound(this, this.blockPos, SoundEvents.BLOCK_ANVIL_PLACE, BLOCKS, 10f, 1f)
-					this.sendMessage(
-						LiteralText("")
-							.append(serverName)
-							.append(playerName)
-							.append(LiteralText("悄悄对你说").styled { it.withColor(Formatting.GRAY) })
-							.append(msg),
-						net.minecraft.network.MessageType.CHAT,
-						message.senderUUID,
-					)
-				}
-			}
-		}
+		val messageText = message.toFinalText()
+		this.networkHandler.sendPacket(
+			ChatMessageS2CPacket(
+				messageText,
+				Optional.of(messageText),
+				(this as (MixinServerPlayerEntity)).getMessageTypeId(MessageType.CHAT),
+				MessageSender(message.senderUUID, message.sender.toText()),
+				Instant.now(),
+				SignatureData.NONE
+			)
+		)
 	}
 }

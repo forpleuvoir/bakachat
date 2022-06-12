@@ -1,20 +1,19 @@
-package org.bakamc.chat.common.util
+package bakamc.chat.common.util
 
 /**
  *
 
  * 项目名 bakachat
 
- * 包名 org.bakamc.chat.common.util
+ * 包名 bakamc.chat.common.util
 
  * 文件名 StringUtil
 
- * 创建时间 2022/4/16 12:48
+ * 创建时间 2022/6/5 13:57
 
  * @author forpleuvoir
 
  */
-
 
 fun String.replace(map: Map<String, String>): String {
 	var temp: String = this
@@ -23,5 +22,3 @@ fun String.replace(map: Map<String, String>): String {
 	}
 	return temp
 }
-
-

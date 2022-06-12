@@ -1,29 +1,24 @@
-package org.bakamc.chat.common.util
+package bakamc.chat.common.util
 
 import com.google.gson.*
-import org.bakamc.chat.common.message.textevent.HoverEvent
-import org.bakamc.chat.common.message.textevent.HoverEventAdapter
 
 /**
  *
 
  * 项目名 bakachat
 
- * 包名 org.bakamc.chat.common.util
+ * 包名 bakamc.chat.common.util
 
  * 文件名 JsonUtil
 
- * 创建时间 2022/4/10 18:47
+ * 创建时间 2022/6/5 13:52
 
  * @author forpleuvoir
 
  */
 object JsonUtil {
 
-	val gson: Gson = GsonBuilder()
-		.registerTypeAdapter(HoverEvent::class.java, HoverEventAdapter())
-		.setPrettyPrinting()
-		.create()
+	val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 
 	fun parseToJsonArray(json: String): JsonArray {
 		return JsonParser.parseString(json).asJsonArray

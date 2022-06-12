@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'org.bakamc.chat'
-version '0.1.0'
+version rootProject.project.version
 
 repositories {
     mavenCentral()

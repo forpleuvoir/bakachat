@@ -1,24 +1,24 @@
-package org.bakamc.chat.common.util
+package bakamc.chat.common.util
 
 import java.io.*
 import java.nio.charset.StandardCharsets
 
 /**
- * 文件工具类
  *
+
+ * 项目名 bakachat
+
+ * 包名 bakamc.chat.common.util
+
+ * 文件名 FileUtil
+
+ * 创建时间 2022/6/5 14:03
+
  * @author forpleuvoir
- *
- * #BelongsProject hiirosakura
- *
- * #BelongsPackage org.bakamc.chat.fabric.util
- *
- * #ClassName FileUtil
- *
- * #CreateTime 2020/10/21 9:47
- *
- * #Description 文件工具类
+
  */
 object FileUtil {
+
 	/**
 	 * 加载文件中的内容
 	 *
