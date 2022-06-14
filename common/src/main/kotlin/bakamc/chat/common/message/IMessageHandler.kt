@@ -1,11 +1,11 @@
-package bakamc.chat.common
+package bakamc.chat.common.message
 
 /**
  *
 
  * 项目名 bakachat
 
- * 包名 bakamc.chat.common
+ * 包名 bakamc.chat.common.message
 
  * 文件名 IMessageHandler
 
@@ -42,6 +42,13 @@ interface IMessageHandler<T, P> {
 	fun reload()
 
 	/**
+	 * 服务器配置
+	 *
+	 * 连接服务器时服务器就应该返回
+	 */
+	val riguruMessageConfig: IRiguruMessageConfig
+
+	/**
 	 * 发送消息
 	 * @param player P
 	 * @param message T
@@ -70,11 +77,18 @@ interface IMessageHandler<T, P> {
 	fun Message.toText(): T
 
 	/**
-	 * 转换为最后输出的Text
+	 * 转换为最后输出的广播Text
 	 * @receiver Message
 	 * @return T
 	 */
-	fun Message.toFinalText(): T
+	fun Message.toFinalBroadcastText(): T
+
+	/**
+	 * 转换为最后输出的私聊Text
+	 * @receiver Message
+	 * @return T
+	 */
+	fun Message.toFinalWhisperText(player: P): T
 
 	/**
 	 * 消息预处理

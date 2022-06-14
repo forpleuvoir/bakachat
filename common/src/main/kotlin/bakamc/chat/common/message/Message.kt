@@ -1,6 +1,6 @@
-package bakamc.chat.common
+package bakamc.chat.common.message
 
-import bakamc.chat.common.MessageType.WHISPER
+import bakamc.chat.common.message.MessageType.WHISPER
 import bakamc.chat.common.util.JsonUtil.gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -11,7 +11,7 @@ import java.util.*
 
  * 项目名 bakachat
 
- * 包名 bakamc.chat.common
+ * 包名 bakamc.chat.common.message
 
  * 文件名 Message
 

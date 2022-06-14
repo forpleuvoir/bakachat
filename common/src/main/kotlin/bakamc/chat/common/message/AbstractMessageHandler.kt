@@ -1,7 +1,9 @@
-package bakamc.chat.common
+package bakamc.chat.common.message
 
-import bakamc.chat.common.MessageType.CHAT
+import bakamc.chat.common.message.MessageType.CHAT
 import bakamc.chat.common.util.MessageUtil
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import java.util.*
 import java.util.regex.Pattern
 
@@ -11,7 +13,7 @@ import java.util.regex.Pattern
 
  * 项目名 bakachat
 
- * 包名 bakamc.chat.common
+ * 包名 bakamc.chat.common.message
 
  * 文件名 AbstractMessageHandler
 
@@ -22,14 +24,44 @@ import java.util.regex.Pattern
  */
 abstract class AbstractMessageHandler<T, P>(protected var config: IMessageConfig) : IMessageHandler<T, P> {
 
+	private lateinit var riguruMsgConfig: IRiguruMessageConfig
+
 	protected val bakaChatWebSocketClient: BakaChatWebSocketClient = BakaChatWebSocketClient(
 		this.config.riguruAddress
 	) {
 		try {
 			receivesMessage(Message.fromJsonStr(it))
 		} catch (e: Exception) {
-			println("消息解析失败")
-			e.printStackTrace()
+			try {
+				JsonParser.parseString(it).asJsonObject.run { riguruMsgConfig = getRiguruMessageConfig() }
+			} catch (e: Exception) {
+				println("消息解析失败")
+				e.printStackTrace()
+			}
+		}
+	}
+
+	/**
+	 * 从Json中解析为[IRiguruMessageConfig]
+	 * @receiver JsonObject
+	 * @return IRiguruMessageConfig
+	 */
+	protected fun JsonObject.getRiguruMessageConfig(): IRiguruMessageConfig {
+		val chatOrder = LinkedList<String>().apply {
+			getAsJsonArray("chatSort").forEach { str -> this.addLast(str.asString) }
+		}.toTypedArray()
+		val serverWrapper = get("serverWrapper").asString
+		val playerNameWrapper = get("playerNameWrapper").asString
+		val messageWrapper = get("messageWrapper").asString
+		return object : IRiguruMessageConfig {
+			override val chatSort: Array<String>
+				get() = chatOrder
+			override val serverWrapper: String
+				get() = serverWrapper
+			override val playerNameWrapper: String
+				get() = playerNameWrapper
+			override val messageWrapper: String
+				get() = messageWrapper
 		}
 	}
 
@@ -47,6 +79,9 @@ abstract class AbstractMessageHandler<T, P>(protected var config: IMessageConfig
 		//处理物品展示
 		add(this@AbstractMessageHandler::handleItemShow)
 	}
+
+	override val riguruMessageConfig: IRiguruMessageConfig
+		get() = riguruMsgConfig
 
 	override fun connect() = bakaChatWebSocketClient.connect()
 

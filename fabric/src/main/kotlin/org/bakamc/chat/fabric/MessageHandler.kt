@@ -1,6 +1,7 @@
 package org.bakamc.chat.fabric
 
-import bakamc.chat.common.*
+import bakamc.chat.common.message.*
+import bakamc.chat.common.message.MessageType.CHAT
 import net.minecraft.item.ItemStack
 import net.minecraft.network.encryption.NetworkEncryptionUtils.SignatureData
 import net.minecraft.network.message.MessageSender
@@ -12,8 +13,10 @@ import net.minecraft.text.*
 import net.minecraft.text.ClickEvent.Action.SUGGEST_COMMAND
 import net.minecraft.text.HoverEvent.Action
 import net.minecraft.text.HoverEvent.ItemStackContent
+import net.minecraft.util.Formatting.GRAY
 import net.minecraft.util.Formatting.ITALIC
 import org.bakamc.chat.fabric.mixin.MixinServerPlayerEntity
+import org.bakamc.chat.fabric.util.text
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
@@ -60,24 +63,25 @@ class MessageHandler(config: IMessageConfig, private val server: MinecraftServer
 	override fun Message.toText(): Text {
 		val regex = "§\\(.+?§\\)"
 		val texts = ArrayList<Text>()
+		val message = riguruMessageConfig.messageWrapper.replace("%message%", message)
 		Pattern.compile(regex).matcher(message).run {
 			while (this.find()) {
 				texts.add(Text.Serializer.fromJson(this.group())!!)
 			}
 		}
-		val message: MutableText = Text.empty()
+		val msg: MutableText = Text.empty()
 		this.message.split(regex.toRegex()).run {
 			forEachIndexed { index, str ->
-				message.append(str).let {
+				msg.append(str).let {
 					if (index != this.size - 1) it.append(texts[index])
 				}
 			}
 		}
-		return message
+		return msg
 	}
 
 	override fun ServerInfo.toText(): Text {
-		val hoverText = MutableText.of(LiteralTextContent("$serverName\n"))
+		val hoverText = MutableText.of(LiteralTextContent("${riguruMessageConfig.serverWrapper.replace("%serverName%", serverName)}\n"))
 			.append("\n")
 			.append("服务器ID:$serverId\n")
 			.append("$description\n")
@@ -90,7 +94,9 @@ class MessageHandler(config: IMessageConfig, private val server: MinecraftServer
 	}
 
 	override fun PlayerInfo.toText(): Text {
-		val hoverText = MutableText.of(LiteralTextContent("§b$name\n"))
+		val hoverText = MutableText.of(LiteralTextContent("${
+			riguruMessageConfig.playerNameWrapper.replace("%playerName%", name).replace("%displayName%", displayName)
+		}\n"))
 			.append("\n")
 			.append("玩家名:$displayName\n")
 			.append("uuid:$uuid\n")
@@ -119,8 +125,37 @@ class MessageHandler(config: IMessageConfig, private val server: MinecraftServer
 		)
 	}
 
-	override fun Message.toFinalText(): Text {
-		TODO("Not yet implemented")
+	override fun Message.toFinalBroadcastText(): Text {
+		val text = Text.empty()
+		riguruMessageConfig.chatSort.forEach {
+			when (it) {
+				"server"     -> {
+					text.append(serverInfo.toText())
+				}
+				"prefix"     -> {
+					// TODO: 2022/6/15
+				}
+				"playerName" -> {
+					text.append(sender.toText())
+				}
+				"message"    -> {
+					text.append(toText())
+				}
+			}
+		}
+		return text
+	}
+
+	override fun Message.toFinalWhisperText(player: ServerPlayerEntity): Text {
+		val isSender = sender.name == player.entityName || sender.displayName == player.displayName.string
+		val text = Text.empty().append(serverInfo.toText())
+		if (isSender) text.append("你悄悄对".text.styled { it.withColor(GRAY) })
+			.append(riguruMessageConfig.playerNameWrapper.replace("%playerName%", receiver).replace("%displayName%", receiver))
+			.append(toText())
+		else text.append(sender.toText())
+			.append("悄悄对你说".text.styled { it.withColor(GRAY) })
+			.append(toText())
+		return text
 	}
 
 	override fun whisper(message: Message) {
@@ -136,7 +171,7 @@ class MessageHandler(config: IMessageConfig, private val server: MinecraftServer
 
 	override fun broadcast(message: Message) {
 		this.server.run {
-			sendMessage(message.toFinalText())
+			sendMessage(message.toFinalBroadcastText())
 			playerManager.playerList.forEach {
 				it.sendMessage(message)
 			}
@@ -145,7 +180,7 @@ class MessageHandler(config: IMessageConfig, private val server: MinecraftServer
 	}
 
 	private fun ServerPlayerEntity.sendMessage(message: Message) {
-		val messageText = message.toFinalText()
+		val messageText = if (message.type == CHAT) message.toFinalBroadcastText() else message.toFinalWhisperText(this)
 		this.networkHandler.sendPacket(
 			ChatMessageS2CPacket(
 				messageText,

@@ -1,4 +1,4 @@
-package bakamc.chat.common
+package bakamc.chat.common.message
 
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
@@ -9,7 +9,7 @@ import java.net.URI
 
  * 项目名 bakachat
 
- * 包名 bakamc.chat.common
+ * 包名 bakamc.chat.common.message
 
  * 文件名 BakaChatWebSocketClient
 

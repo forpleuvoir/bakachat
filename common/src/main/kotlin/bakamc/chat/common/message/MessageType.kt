@@ -1,11 +1,11 @@
-package bakamc.chat.common
+package bakamc.chat.common.message
 
 /**
  *
 
  * 项目名 bakachat
 
- * 包名 bakamc.chat.common
+ * 包名 bakamc.chat.common.message
 
  * 文件名 MessageType
 
